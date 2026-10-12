@@ -1,0 +1,9 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.env
+__azurite_db_*
+__blobstorage__/
+__queuestorage__/
+.azurite/

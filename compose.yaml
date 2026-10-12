@@ -1,0 +1,32 @@
+# Local environment: API + Azurite (Azure Blob Storage emulator).
+# Run:  docker compose up --build   (or: podman compose up --build)
+services:
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite:3.37.0
+    # Blob service only. --skipApiVersionCheck because the Azure SDK is often newer than the emulator.
+    command: >
+      azurite-blob --blobHost 0.0.0.0 --blobPort 10000 --location /data
+      --skipApiVersionCheck --disableTelemetry
+    ports:
+      - "10000:10000"
+    volumes:
+      - azurite-data:/data
+
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      # Well-known Azurite dev key — publicly documented, not a secret.
+      # Host is "azurite" (the service name), not 127.0.0.1: containers share a network.
+      AZURE_STORAGE_CONNECTION_STRING: "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;"
+      STORAGE_CONTAINER: ingest
+      CREATE_CONTAINER: "true"
+    depends_on:
+      - azurite
+    # If the API starts before Azurite listens, the SDK retry (~15 s) usually covers it;
+    # if not, the container restarts.
+    restart: on-failure
+
+volumes:
+  azurite-data:

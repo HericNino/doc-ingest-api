@@ -1,0 +1,13 @@
+# The Dockerfile only copies what it needs; this is a second line of defence
+# (especially .env — secrets must never end up in an image).
+.env
+.env.*
+.venv/
+.git/
+.github/
+__pycache__/
+*.pyc
+.pytest_cache/
+tests/
+infra/
+*.md
