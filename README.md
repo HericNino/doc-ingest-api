@@ -18,36 +18,37 @@ Interactive docs: `http://localhost:8000/docs`
 
 ## Run locally
 
-**Option A: containers (API + Azurite emulator)**
+**Option A: containers (API + Azurite emulator)** — needs Docker Desktop, OrbStack or Podman
 
 ```bash
 docker compose up --build
-# or, with Podman:  podman compose up --build
 ```
 
-**Option B: plain Python (Windows / PowerShell)**
+**Option B: plain Python 3.12+** (macOS / Linux; on Windows use `.venv\Scripts\activate`)
 
-```powershell
-py -3.12 -m venv .venv
-.venv\Scripts\Activate.ps1
+```bash
+python3.12 -m venv .venv && source .venv/bin/activate
 pip install -r requirements-dev.txt
 pytest
 
 # Storage emulator in a second terminal (needs Node.js):
 npx azurite-blob --skipApiVersionCheck --location .azurite
 
-copy .env.example .env
+cp .env.example .env
 uvicorn app.main:app --env-file .env --reload
 ```
 
 **Try it**
 
-```powershell
-$job = Invoke-RestMethod -Method Post http://localhost:8000/jobs `
-  -ContentType 'application/json' -Body '{"text": "Krk is the largest island in the Adriatic.", "chunk_size": 50, "overlap": 0}'
-Invoke-RestMethod http://localhost:8000/jobs/$($job.job_id)
-Invoke-RestMethod http://localhost:8000/jobs/$($job.job_id)/result
+```bash
+JOB=$(curl -s -X POST localhost:8000/jobs -H 'content-type: application/json' \
+  -d '{"text": "Krk is the largest island in the Adriatic.", "chunk_size": 50, "overlap": 0}' \
+  | python3 -c 'import sys, json; print(json.load(sys.stdin)["job_id"])')
+curl -s localhost:8000/jobs/$JOB
+curl -s localhost:8000/jobs/$JOB/result
 ```
+
+> **Apple Silicon note:** an image built on an M-series Mac is `linux/arm64`, while Azure Container Apps runs `linux/amd64`. Pushing a Mac-built image fails at startup with `exec format error`. Images for Azure are therefore built in CI on amd64 runners (or locally with `docker buildx build --platform linux/amd64`).
 
 ## Design decisions
 
